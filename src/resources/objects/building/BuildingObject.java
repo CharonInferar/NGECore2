@@ -183,6 +183,20 @@ public class BuildingObject extends TangibleObject implements IPersistent, Seria
 		return 0;
 	}
 	
+	public CellObject getCellForPosition(Point3D position) {
+		Vector<CellObject> cells = getCells();
+		float minDistSquared = 9999F;
+		CellObject closestCell = null;
+		for (CellObject cell : cells) {
+			if (NGECore.getInstance().aiService.distanceSquared2D(cell.getPosition(), position)<minDistSquared) {
+				minDistSquared = NGECore.getInstance().aiService.distanceSquared2D(cell.getPosition(), position);
+				closestCell = cell;
+			}
+		}
+		
+		return closestCell;
+	}
+	
 	public float getMaintenanceAmount() {
 		return (float) otherVariables.get("maintenanceAmount");
 	}

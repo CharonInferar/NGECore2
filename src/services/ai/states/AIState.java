@@ -29,6 +29,7 @@ import engine.resources.scene.Point3D;
 import engine.resources.scene.Quaternion;
 import engine.resources.service.INetworkDispatch;
 import resources.common.SpawnPoint;
+import resources.objects.building.BuildingObject;
 import resources.objects.cell.CellObject;
 import resources.objects.creature.CreatureObject;
 import resources.objects.tangible.TangibleObject;
@@ -125,11 +126,32 @@ public abstract class AIState {
 			}
 		}
 		
+		if (actor.getCurrentState().getClass().equals(AttackState.class) || actor.getCurrentState().getClass().equals(RetreatState.class) || actor.getCurrentState().getClass().equals(RepositionState.class)){
+			if (actor.getFollowObject()!=null){
+				targetPosition = actor.getFollowObject().getWorldPosition();
+				if (actor.getFollowObject().getContainer()!=null)
+					targetPosition = actor.getFollowObject().getPosition();
+				if (creature.getContainer()!=null && creature.getGrandparent() instanceof BuildingObject){
+					CellObject cellObj1 = ((BuildingObject)creature.getGrandparent()).getCellForPosition(targetPosition);
+					if (cellObj1!=null){
+						targetPosition.setCell(cellObj1);
+//						System.out.println("CELL FOUND! " + cellObj1.getCellNumber());
+					}
+				}
+				if (actor.getFollowObject() instanceof CreatureObject){
+					Point3D crumbPos = NGECore.getInstance().aiService.findClosestBreadCrumb(creature,((CreatureObject)actor.getFollowObject()));
+					if (crumbPos!=null){
+						targetPosition = crumbPos;
+						System.out.println("Closed crumb found target.getContainer() " + NGECore.getInstance().aiService.distanceSquared2D(creature.getPosition(),targetPosition));
+					}
+				}
+			}
+		}
+		
 		Vector<Point3D> path = core.aiService.findPath(creature.getPlanetId(), currentPosition, targetPosition);
 		
 		if (targetPosition==null){
-			if (creature.getTemplate().contains("shared_dressed_tutorial_mentor.iff"))
-				System.out.println("findNewPosition targetPosition null ");
+
 			DevLog.debugoutai(actor, "Charon", "AI State findnewpos", "Breakout2");
 			return false;
 		}
@@ -251,10 +273,7 @@ public abstract class AIState {
 				}
 				
 			} else {
-				
-				if (creature.getTemplate().contains("shared_dressed_tutorial_mentor.iff"))
-					System.out.println("ELSE CASE");
-				
+
 				newX = currentPathPosition.x;
 				newZ = currentPathPosition.z;
 				newY = core.terrainService.getHeight(creature.getPlanetId(), newX, newZ);			
@@ -698,7 +717,14 @@ public abstract class AIState {
 		if(!foundNewPos || (newPosition.x == 0 && newPosition.z == 0))
 			return;
 		
-		Point3D newWorldPos = newPosition.getWorldPosition();
+		// added
+		Point3D newWorldPos = newPosition;
+		if (newPosition.getCell()==null)
+			newWorldPos = newPosition.getWorldPosition();
+				
+		currentPosition = creature.getPosition();
+		// added
+
 		float direction = (float) Math.atan2(newWorldPos.x - currentPosition.x, newWorldPos.z - currentPosition.z);
 		if(direction < 0)
 			direction = (float) (2 * Math.PI + direction);
@@ -707,6 +733,12 @@ public abstract class AIState {
         	quaternion.y *= -1;
         	quaternion.w *= -1;
         }
+        
+//        if (newPosition.getCell()!=null)
+//        	System.out.println("newPosition AHAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA " + newPosition.x + " z " + newPosition.z);
+//        if (currentPosition.getCell()!=null)
+//        	System.out.println("currentPosition AHAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" + currentPosition.x + " z " + currentPosition.z);
+//        
         
 		core.simulationService.moveObject(creature, newPosition, quaternion, creature.getMovementCounter(), speed, newPosition.getCell());	
 	}

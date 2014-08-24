@@ -328,6 +328,75 @@ public class AIService {
 		}, 10, 2000, TimeUnit.MILLISECONDS);
 	}
 	
+	public void startBreadCrumbTrail(CreatureObject target){
+		
+		if (target.isLeavingTrail())
+			return;
+		target.setLeavingTrail(true);
+		target.clearBreadCrumbTrail();
+		
+		final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);	
+		final Future<?>[] bct = {null};
+		bct[0] = scheduler.scheduleAtFixedRate(new Runnable() {
+
+			@Override
+			public void run() {
+				try {
+
+					if (!target.isLeavingTrail()){
+						Thread.yield();
+						bct[0].cancel(false);
+					}
+
+					Point3D targetPosition = new Point3D();
+			
+					if (target.getContainer()!=null && target.getContainer() instanceof CellObject){
+						CellObject cell = (CellObject)target.getContainer();
+						if (cell!=null){
+							targetPosition.setCell(cell);
+							target.addPositionToBreadCrumbTrail(target.getPosition());
+						}
+					} else {
+						target.addPositionToBreadCrumbTrail(target.getWorldPosition());
+					}
+					
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
+			
+		}, 0, 1000, TimeUnit.MILLISECONDS);
+	}
+	
+	public Point3D findClosestBreadCrumb(CreatureObject NPC, CreatureObject target){
+		
+		Point3D closestBradCrumb = null;
+		
+		if (!target.isLeavingTrail())
+			return null;
+		
+		float minDist = 9999F;
+		int newIndex = 9999;
+		
+		Vector<Point3D> trail = target.getBreadCrumbTrail();
+		for (int i=0;i<trail.size();i++){
+			Point3D point = trail.get(i);
+			Point3D NPCpos = NPC.getWorldPosition();
+			int lastindex = ((AIActor) NPC.getAttachment("AI")).getLastTrailIndex();		
+			if (point.getCell()!=null)
+				NPCpos = NPC.getPosition();
+			if (distanceSquared2D(NPCpos,point)<minDist && lastindex<i && distanceSquared2D(NPCpos,point)>1.2){
+				minDist = distanceSquared2D(NPCpos,point);
+				closestBradCrumb = point;
+				newIndex = i;
+			}
+		}
+		if (newIndex!=9999)
+			((AIActor) NPC.getAttachment("AI")).setLastTrailIndex(newIndex);
+		return closestBradCrumb;
+	}
+
+	
 	public void logAI(String logMsg){
 		if (checkDeveloperIdentity()){
 			System.err.println("AI-LOG: " + logMsg);

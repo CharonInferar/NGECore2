@@ -867,18 +867,9 @@ public class SimulationService implements INetworkDispatch {
 				object.setMovementCounter(movementCounter + 1);
 			}
 			if(object.getContainer() != null && newPosition != oldPos) {
-				object.getContainer()._remove(object);
+				object.getContainer()._remove(object); 
 				add(object, newPosition.x, newPosition.z);
 			} 
-			
-			if (object.getPlanet().getName().equals("talus") && object.getTemplate().contains("stormtrooper")){
-//				float xx = object.getWorldPosition().x - newPosition.x;
-//				float zz = object.getWorldPosition().z - newPosition.z;
-//				float diff = (float) Math.sqrt(xx*xx+zz*zz);
-//				System.out.println(" ((CreatureObject)object).getSpeedMultiplierBase());: " + ((CreatureObject)object).getSpeedMultiplierBase());
-//				System.out.println(" ((CreatureObject)object).getSpeedMultiplierMod());: " + ((CreatureObject)object).getSpeedMultiplierMod());
-//	
-			}
 			
 			UpdateTransformMessage utm = new UpdateTransformMessage(object.getObjectID(), (short) (newPosition.x * 4 + 0.5), (short) (newPosition.y * 4 + 0.5), (short) (newPosition.z * 4 + 0.5), movementCounter + 1, getSpecialDirection(newOrientation), speed);
 
@@ -920,7 +911,7 @@ public class SimulationService implements INetworkDispatch {
 
 			
 		} else {
-			
+						
 			newPosition.setCell(cell);
 			Point3D oldPos = object.getPosition();
 			object.setPosition(newPosition);
@@ -930,6 +921,8 @@ public class SimulationService implements INetworkDispatch {
 			UpdateTransformWithParentMessage utm = new UpdateTransformWithParentMessage(object.getObjectID(), cell.getObjectID(), (short) (newPosition.x * 8 + 0.5), (short) (newPosition.y * 8 + 0.5), (short) (newPosition.z * 8 + 0.5), movementCounter + 1, getSpecialDirection(newOrientation), speed);
 			
 			if(object.getContainer() != cell) {
+//				if (object.getTemplate().contains("shared_dantari_male"))
+//					System.out.println("REMOVED FROM QUADTREE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
 				remove(object, oldPos.x, oldPos.z);
 				if(object.getContainer() != null)
 					object.getContainer()._remove(object);

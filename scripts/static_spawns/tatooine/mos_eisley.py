@@ -160,7 +160,7 @@ def addPlanetSpawns(core, planet):
 	
 	# Looped Patrol must end in same cell like the start point!!!
 	#building id: 1105845                               Buildingid + cell !
-	trehla = stcSvc.spawnObject('trehla', 'tatooine', long(1105845 + 8), float(24.21), float(2.12), float(73.49), float(0.92), float(0), float(-0.38), float(0)) 
+	trehla = stcSvc.spawnObject('dantari_raider', 'tatooine', long(1105845 + 8), float(24.21), float(2.12), float(73.49), float(0.92), float(0), float(-0.38), float(0)) 
 	patrolpointsCells = Vector()   # Vector       Building reference        Patrolpoint                                  CellID                                    
 	aiSvc.addPatrolPointCell(patrolpointsCells, trehla.getGrandparent(), Point3D(float(25.11), float(2.10), float(50.22)), 7)
 	aiSvc.addPatrolPointCell(patrolpointsCells, trehla.getGrandparent(), Point3D(float(21.25), float(0.6), float(45.51)), 6)

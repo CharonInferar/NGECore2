@@ -95,6 +95,7 @@ public class AIActor {
 	private boolean actorAlive = true;
 	private int progressionMarker = 0;
 	private boolean AIactive = true;
+	private int lastTrailIndex = 9999;
 
 	public AIActor(CreatureObject creature, Point3D spawnPosition, ScheduledExecutorService scheduler) {
 		actorID = autoActorID++;
@@ -796,5 +797,13 @@ public class AIActor {
 			System.out.println("Aiactor cloning failed IllegalAccessException");
 			e.printStackTrace();
 		}		
+	}
+
+	public int getLastTrailIndex() {
+		return lastTrailIndex;
+	}
+
+	public void setLastTrailIndex(int lastTrailIndex) {
+		this.lastTrailIndex = lastTrailIndex;
 	}
 }

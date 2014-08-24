@@ -26,6 +26,7 @@ import java.util.Vector;
 
 import engine.resources.scene.Point3D;
 import main.NGECore;
+import resources.objects.cell.CellObject;
 import resources.objects.creature.CreatureObject;
 import resources.objects.tangible.TangibleObject;
 import resources.objects.weapon.WeaponObject;
@@ -50,6 +51,12 @@ public class AttackState extends AIState {
 			return StateResult.FINISHED;
 		creature.setLookAtTarget(actor.getFollowObject().getObjectID());
 		creature.setIntendedTarget(actor.getFollowObject().getObjectID());
+		if (actor.getFollowObject() instanceof CreatureObject){
+			if (!((CreatureObject)actor.getFollowObject()).isLeavingTrail()){
+				actor.setLastTrailIndex(9999);
+				NGECore.getInstance().aiService.startBreadCrumbTrail((CreatureObject)actor.getFollowObject());
+			}
+		}
 		actor.scheduleMovement();
 		actor.scheduleRecovery();
 		return StateResult.UNFINISHED;
@@ -81,6 +88,15 @@ public class AttackState extends AIState {
 				checkPosition = creature.getWorldPosition();
 			if (actor.getIntendedPrimaryAIState().getClass().equals(FollowState.class))
 				checkPosition = creature.getWorldPosition();
+			
+			// added
+//			if (creature.getContainer()!=null && creature.getContainer() instanceof CellObject){
+//				CellObject cellObj1 = (CellObject)creature.getContainer();
+//				if (cellObj1!=null){
+//					checkPosition.setCell(cellObj1);
+//				}
+//			}
+			// added	
 			
 			try {
 				if(checkPosition.getDistance(creature.getWorldPosition()) > 128 || NGECore.getInstance().terrainService.isWater(creature.getPlanetId(), actor.getFollowObject().getWorldPosition())) {

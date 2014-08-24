@@ -26,6 +26,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.Vector;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.LongAdder;
@@ -86,6 +87,8 @@ public class CreatureObject extends TangibleObject implements IPersistent {
 	private transient long tefTime = 0;
 	private transient SWGObject useTarget;
 	private transient boolean isConstructing = false;
+	private transient Vector<Point3D> breadCrumbTrail = new Vector<Point3D>();
+	private transient boolean leavingTrail = false;
 	
 	public CreatureObject(long objectID, Planet planet, Point3D position, Quaternion orientation, String Template) {
 		super(objectID, planet, position, orientation, Template);
@@ -1432,6 +1435,37 @@ public class CreatureObject extends TangibleObject implements IPersistent {
 	
 	public void playMusic(String sndFile, long targetId, int repetitions, boolean flag) {
 		getClient().getSession().write(new PlayMusicMessage(sndFile, targetId, 1, false));
+	}
+	
+	@SuppressWarnings("unchecked")
+	public Vector<Point3D> getBreadCrumbTrail() {
+		Vector<Point3D> breadCrumbTrailClone = (Vector<Point3D>) breadCrumbTrail.clone();
+		return breadCrumbTrailClone;
+	}
+
+	public void setBreadCrumbTrail(Vector<Point3D> breadCrumbTrail) {
+		this.breadCrumbTrail = breadCrumbTrail;
+	}
+	
+	public void clearBreadCrumbTrail() {
+		this.breadCrumbTrail.clear();
+	}
+	
+	public void addPositionToBreadCrumbTrail(Point3D position){
+		if (breadCrumbTrail.size()<50){
+			breadCrumbTrail.add(position);
+		} else {
+			breadCrumbTrail.remove(0);
+			breadCrumbTrail.add(position);
+		}
+	}
+	
+	public boolean isLeavingTrail() {
+		return leavingTrail;
+	}
+
+	public void setLeavingTrail(boolean leavingTrail) {
+		this.leavingTrail = leavingTrail;
 	}
 	
 	public void notifyClients(IoBuffer buffer, boolean notifySelf) {
