@@ -52,6 +52,8 @@ import main.NGECore;
 
 public class AIService {
 	
+	CreatureObject corpse = null;
+	
 	@SuppressWarnings("unused") private Vector<AIActor> aiActors = new Vector<AIActor>();
 	private NGECore core;
 	private TangibleObject checkerAI = null;
@@ -328,6 +330,7 @@ public class AIService {
 		}, 10, 2000, TimeUnit.MILLISECONDS);
 	}
 	
+<<<<<<< HEAD
 	public void startBreadCrumbTrail(CreatureObject target){
 		
 		if (target.isLeavingTrail())
@@ -397,6 +400,15 @@ public class AIService {
 	}
 
 	
+=======
+	// Test method
+	public void explicitDestroy(CreatureObject actor){
+		System.out.println("SEND DESTROY SENDING for " + corpse.getTemplate());
+		corpse.sendDestroy(actor.getClient());
+		System.out.println("SEND DESTROY SENT ");
+	}
+	
+>>>>>>> origin/master
 	public void logAI(String logMsg){
 		if (checkDeveloperIdentity()){
 			System.err.println("AI-LOG: " + logMsg);
@@ -407,5 +419,14 @@ public class AIService {
 		if (System.getProperty("user.name").equals("Charon"))
 			return true;
 		return false;
+	}
+
+	public CreatureObject getCorpse() {
+		return corpse;
+	}
+
+	public void setCorpse(CreatureObject corpse) {
+		System.out.println("SET CORPSE " + corpse.getTemplate());
+		this.corpse = corpse;
 	}
 }

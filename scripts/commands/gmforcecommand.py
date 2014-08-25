@@ -196,7 +196,18 @@ def run(core, actor, target, commandString):
 		latargetID = long(actor.getIntendedTarget())
 		latarget = core.objectService.getObject(latargetID)
 		actor.sendSystemMessage('Optionsbitmask for unit ' + latarget.getCustomName() + ' is %s' % latarget.getOptionsBitmask(), 0)
-		
+	
+	elif command == 'isinquad':		
+		latargetID = long(actor.getIntendedTarget())
+		latarget = core.objectService.getObject(latargetID)
+		actor.sendSystemMessage('latarget %s' % latargetID, 0)
+		if latarget:
+			actor.sendSystemMessage('Is in quad %s' % latarget.isInQuadtree(), 0)
+			
+	elif command == 'killcorpse':		
+
+		core.aiService.explicitDestroy(actor)
+	
 	elif command == 'spawninst':
 			
 		#String campTemplate = "object/building/poi/shared_gcw_rebel_clone_tent_small.iff"; // LOL why doesn't this spawn?!?!?!
