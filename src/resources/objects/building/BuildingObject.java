@@ -22,9 +22,13 @@
 package resources.objects.building;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Vector;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
+import org.apache.commons.math3.geometry.euclidean.twod.Vector2D;
 import org.apache.mina.core.buffer.IoBuffer;
 
 import main.NGECore;
@@ -35,8 +39,14 @@ import resources.objects.ObjectMessageBuilder;
 import resources.objects.cell.CellObject;
 import resources.objects.creature.CreatureObject;
 import resources.objects.tangible.TangibleObject;
+import engine.clientdata.ClientFileManager;
+import engine.clientdata.visitors.FLRVisitor;
+import engine.clientdata.visitors.MeshVisitor;
 import engine.clientdata.visitors.PortalVisitor;
+import engine.clientdata.visitors.PortalVisitor.Cell;
 import engine.clients.Client;
+import engine.resources.common.Mesh3DTriangle;
+import engine.resources.common.Triangle;
 import engine.resources.objects.Baseline;
 import engine.resources.objects.IPersistent;
 import engine.resources.objects.SWGObject;
@@ -184,17 +194,178 @@ public class BuildingObject extends TangibleObject implements IPersistent, Seria
 	}
 	
 	public CellObject getCellForPosition(Point3D position) {
-		Vector<CellObject> cells = getCells();
-		float minDistSquared = 9999F;
 		CellObject closestCell = null;
+		
+		Vector<CellObject> cells = getCells();
+		float minDistSquared = 9999F;		
 		for (CellObject cell : cells) {
 			if (NGECore.getInstance().aiService.distanceSquared2D(cell.getPosition(), position)<minDistSquared) {
 				minDistSquared = NGECore.getInstance().aiService.distanceSquared2D(cell.getPosition(), position);
 				closestCell = cell;
 			}
+			
+			
+		}
+			
+		PortalVisitor portalVisitor=null;
+		try {
+			portalVisitor = ClientFileManager.loadFile((String) getTemplateData().getAttribute("portalLayoutFilename"), PortalVisitor.class);
+		} catch (InstantiationException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IllegalAccessException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+//		PortalVisitor portal = getPortalVisitor(); -> yields no cells weird
+//		
+//		if (portal == null) {
+//			System.out.println("portal == null");
+//			return null;
+//		}
+		
+//		for (int i = 0; i < portalVisitor.cells.size(); i++) {
+//			Cell cell2 = portalVisitor.cells.get(i);
+//			Vector<Vector3D> vertices = cell2.vertices;		
+//			Vector<Triangle> tris = cell2.triangles;	
+//			System.out.println("Cellname: " + portalVisitor.cells.get(i).name + " vertices.size() " + vertices.size() + " tris " + tris.size());
+//			//System.out.println("Cellname: " + portal.cells.get(i).name);
+//		}
+		
+		
+		engine.clientdata.visitors.PortalVisitor.Cell cell2 = portalVisitor.cells.get(1);
+		Vector<Vector3D> vertices = cell2.vertices;		
+		Vector<Triangle> tris = cell2.triangles;	
+		List<Point3D> pathPaintPointlist = new ArrayList<Point3D>();
+//		for (Triangle tri : tris) {
+//			pathPaintPointlist.add(tri.);
+//		}
+		
+		for (Vector3D vert : vertices) {
+			pathPaintPointlist.add(new Point3D((float)vert.getX(),(float)vert.getZ(),(float)vert.getY()));
 		}
 		
+		
+		//NGECore.getInstance().playerService.createClientPathBox(((AIActor) NPC.getAttachment("AI")).getFollowObject(), pathPaintPointlist);
+		
+		/*
+		 portalVisitor.cells 11
+		Cellname: r0 vertices.size() 124 tris 192
+		Cellname: entrance vertices.size() 12 tris 8
+		Cellname: hallway1 vertices.size() 8 tris 6
+		Cellname: hallway2 vertices.size() 8 tris 6
+		Cellname: hallway3 vertices.size() 6 tris 4
+		Cellname: hallway4 vertices.size() 6 tris 4
+		Cellname: theater vertices.size() 40 tris 28
+		Cellname: side_backstage vertices.size() 14 tris 10
+		Cellname: backstage vertices.size() 16 tris 12
+		Cellname: greenroom vertices.size() 0 tris 0
+		Cellname: performer_entrance vertices.size() 6 tris 4
+		 */
+		
+		
 		return closestCell;
+	}
+	
+	
+	public CellObject getCellForPosition(Point3D position, CreatureObject actor) {
+		CellObject closestCell = null;
+		
+		Vector<CellObject> cells = getCells();
+//		float minDistSquared = 9999F;		
+//		for (CellObject cell : cells) {
+//			if (NGECore.getInstance().aiService.distanceSquared2D(cell.getPosition(), position)<minDistSquared) {
+//				minDistSquared = NGECore.getInstance().aiService.distanceSquared2D(cell.getPosition(), position);
+//				closestCell = cell;
+//			}			
+//		}
+			
+		PortalVisitor portalVisitor=null;
+		try {
+			portalVisitor = ClientFileManager.loadFile((String) getTemplateData().getAttribute("portalLayoutFilename"), PortalVisitor.class);
+		} catch (InstantiationException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IllegalAccessException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+		Cell cell2 = portalVisitor.cells.get(1);
+		Vector<Vector3D> vertices = cell2.vertices;		
+		Vector<Triangle> tris = cell2.triangles;	
+		List<Point3D> pathPaintPointlist = new ArrayList<Point3D>();
+		
+		Vector2D actVect = new Vector2D(position.x, position.z);
+		//System.out.println("actVect x " + actVect.getX() + " y " + " z " + actVect.getY());
+		for (int i=1;i<portalVisitor.cells.size();i++) {
+		//for (int i=1;i<2;i++) {
+			Cell cell3 = portalVisitor.cells.get(i);
+			//System.out.println("cellname " + cell3.name);
+
+			
+			MeshVisitor meshVisitor = null;
+			try {
+				meshVisitor = ClientFileManager.loadFile(cell3.mesh, MeshVisitor.class);
+			} catch (InstantiationException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (IllegalAccessException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			
+			List<Mesh3DTriangle> meshTriangles = meshVisitor.getTriangles();
+			System.out.println(" meshTriangles.size() " + meshTriangles.size());
+			
+			for (int j=0;j<meshTriangles.size();j++){
+				Mesh3DTriangle tri = meshTriangles.get(j);	
+				Vector2D vect1 = new Vector2D(tri.getPointOne().x, tri.getPointOne().z);
+				Vector2D vect2 = new Vector2D(tri.getPointTwo().x, tri.getPointTwo().z);
+				Vector2D vect3 = new Vector2D(tri.getPointThree().x, tri.getPointThree().z);
+				boolean inside = PointInTriangle(actVect,vect1, vect2, vect3);
+				if (inside){
+					System.out.println("YEAH!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! in cell " + i + " name " + cell3.name);
+					closestCell = cells.get(i);
+				}				
+			}
+		}
+		
+		
+		/*
+		 portalVisitor.cells 11
+		Cellname: r0 vertices.size() 124 tris 192
+		Cellname: entrance vertices.size() 12 tris 8
+		Cellname: hallway1 vertices.size() 8 tris 6
+		Cellname: hallway2 vertices.size() 8 tris 6
+		Cellname: hallway3 vertices.size() 6 tris 4
+		Cellname: hallway4 vertices.size() 6 tris 4
+		Cellname: theater vertices.size() 40 tris 28
+		Cellname: side_backstage vertices.size() 14 tris 10
+		Cellname: backstage vertices.size() 16 tris 12
+		Cellname: greenroom vertices.size() 0 tris 0
+		Cellname: performer_entrance vertices.size() 6 tris 4
+		 */
+		
+		
+		return closestCell;
+	}
+	
+	double sign(Vector2D p1, Vector2D p2, Vector2D p3)
+	{
+	  return (p1.getX() - p3.getX()) * (p2.getY() - p3.getY()) - (p2.getX() - p3.getX()) * (p1.getY() - p3.getY());
+	}
+
+	boolean PointInTriangle(Vector2D pt, Vector2D v1, Vector2D v2, Vector2D v3)
+	{
+	  boolean b1, b2, b3;
+
+	  b1 = sign(pt, v1, v2) < 0.0f;
+	  b2 = sign(pt, v2, v3) < 0.0f;
+	  b3 = sign(pt, v3, v1) < 0.0f;
+
+	  return ((b1 == b2) && (b2 == b3));
 	}
 	
 	public float getMaintenanceAmount() {

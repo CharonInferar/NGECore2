@@ -35,6 +35,7 @@ import engine.resources.objects.SWGObject;
 import engine.resources.scene.Point3D;
 import engine.resources.scene.Quaternion;
 import resources.datatables.Options;
+import resources.objects.building.BuildingObject;
 import resources.objects.cell.CellObject;
 import resources.objects.creature.CreatureObject;
 import resources.objects.tangible.TangibleObject;
@@ -95,7 +96,8 @@ public class AIActor {
 	private boolean actorAlive = true;
 	private int progressionMarker = 0;
 	private boolean AIactive = true;
-	private int lastTrailIndex = 9999;
+	private int lastTrailIndex = 0;
+	private int lastTrailUpdate = -1;
 
 	public AIActor(CreatureObject creature, Point3D spawnPosition, ScheduledExecutorService scheduler) {
 		actorID = autoActorID++;
@@ -105,6 +107,31 @@ public class AIActor {
 		this.scheduler = scheduler;
 		creature.getEventBus().subscribe(this);
 		this.currentState = new IdleState();
+		
+		if (creature.getTemplate().contains("eisley_officer")){
+			creature.setAttachment("Pastpoints", new Vector<Point3D>());
+			//NGECore.getInstance().aiService.spawnMarker();
+		}
+		
+//		if (creature.getTemplate().contains("eisley_officer")){
+//			Point3D p1 = new Point3D(14.01F,2.12F,74.27F);
+//			p1.setCell(((BuildingObject)creature.getGrandparent()).getCellByCellNumber(8));
+//			movementPoints.add(p1);
+//			p1 = new Point3D(0.34F,2.12F,74.36F);
+//			p1.setCell(((BuildingObject)creature.getGrandparent()).getCellByCellNumber(8));
+//			movementPoints.add(p1);
+//			p1 = new Point3D(-9.78F,2.12F,74.33F);
+//			p1.setCell(((BuildingObject)creature.getGrandparent()).getCellByCellNumber(8));
+//			movementPoints.add(p1);
+//			p1 = new Point3D(4.25F,2.12F,71.90F);
+//			p1.setCell(((BuildingObject)creature.getGrandparent()).getCellByCellNumber(8));
+//			movementPoints.add(p1);
+//		}
+		
+		
+//		if (creature.getTemplate().contains("dantari") && creature.getPlanet().getName().contains("atooine"))
+//			NGECore.getInstance().aiService.monitorPositions(creature);
+		
 		initiateSchedules();
 	}
 	
@@ -810,5 +837,13 @@ public class AIActor {
 
 	public void setLastTrailIndex(int lastTrailIndex) {
 		this.lastTrailIndex = lastTrailIndex;
+	}
+
+	public int getLastTrailUpdate() {
+		return lastTrailUpdate;
+	}
+
+	public void setLastTrailUpdate(int lastTrailUpdate) {
+		this.lastTrailUpdate = lastTrailUpdate;
 	}
 }

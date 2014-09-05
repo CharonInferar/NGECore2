@@ -7,6 +7,7 @@ from engine.resources.objects import SWGObject
 from java.awt.datatransfer import StringSelection
 from java.awt.datatransfer import Clipboard
 from java.awt import Toolkit
+from java.lang import Math
 from resources.datatables import GcwRank
 from services.gcw import GCWService
 
@@ -101,6 +102,10 @@ def run(core, actor, target, commandString):
 	elif command == 'spawnobj':
 		pos = actor.getPosition()
 		core.staticService.spawnObject(arg1, actor.getPlanet().getName(), 0, pos.x, pos.y, pos.z, 0, 0)
+	
+	elif command == 'verti':
+		building = actor.getGrandparent()
+		building.getCellForPosition(actor.getPosition(), actor)
 		
 	elif command == 'showpos':
 		pos = actor.getPosition()
@@ -130,6 +135,10 @@ def run(core, actor, target, commandString):
 			actor.sendSystemMessage('Building ID : %s' % building_id, 0)
 			print('Cell ID : %s' % cid, 0)
 			print('Building ID : %s' % building_id, 0)
+			realDir = Math.asin(-2*(ori.x*ori.z - ori.w*ori.y))
+			#realDir = Math.atan2(2*(ori.y*ori.z + ori.w*ori.x), ori.w*ori.w - ori.x*ori.x - ori.y*ori.y + ori.z*ori.z)
+			actor.sendSystemMessage('Direction : %s' % Math.toDegrees(realDir), 0)
+			print('Direction : %s' % Math.toDegrees(realDir), 0)
 		if cellid == 0:			
 			str = "<OBJECTNAME> = stcSvc.spawnObject('<MOBILENAME>', '" + planetName + "', long(%s" % cellid + "), float(%.4f" % pos.x + "), float(%.4f" % pos.y + "), float(%.4f" % pos.z + "), float(%.4f" % ori.w + "), float(%.4f" % ori.x + "), float(%.4f" % ori.y + "), float(%.4f" % ori.z + "))"
 		elif cellid != 0:

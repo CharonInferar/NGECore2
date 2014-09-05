@@ -53,7 +53,7 @@ public class AttackState extends AIState {
 		creature.setIntendedTarget(actor.getFollowObject().getObjectID());
 		if (actor.getFollowObject() instanceof CreatureObject){
 			if (!((CreatureObject)actor.getFollowObject()).isLeavingTrail()){
-				actor.setLastTrailIndex(9999);
+				actor.setLastTrailIndex(0);
 				NGECore.getInstance().aiService.startBreadCrumbTrail((CreatureObject)actor.getFollowObject());
 			}
 		}
@@ -77,29 +77,24 @@ public class AttackState extends AIState {
 	public byte move(AIActor actor) {
 		CreatureObject creature = actor.getCreature();
 		if (creature==null)
-			return StateResult.FINISHED;
-		
+			return StateResult.FINISHED;		
 		if(creature.getPosture() == 14)
 			return StateResult.DEAD;
+		
 		actor.getMovementPoints().clear();
 		if(actor.getFollowObject() != null) {
+			
 			Point3D checkPosition = actor.getSpawnPosition().getWorldPosition(); // IdleState default
 			if (actor.getIntendedPrimaryAIState().getClass().equals(PatrolState.class))
 				checkPosition = creature.getWorldPosition();
 			if (actor.getIntendedPrimaryAIState().getClass().equals(FollowState.class))
 				checkPosition = creature.getWorldPosition();
-			
-			// added
-//			if (creature.getContainer()!=null && creature.getContainer() instanceof CellObject){
-//				CellObject cellObj1 = (CellObject)creature.getContainer();
-//				if (cellObj1!=null){
-//					checkPosition.setCell(cellObj1);
-//				}
-//			}
-			// added	
+				
 			
 			try {
 				if(checkPosition.getDistance(creature.getWorldPosition()) > 128 || NGECore.getInstance().terrainService.isWater(creature.getPlanetId(), actor.getFollowObject().getWorldPosition())) {
+					if (creature.getTemplate().contains("eisley_officer") && creature.getPlanet().getName().contains("atooine"))
+						System.out.println("Broke combat! " + checkPosition.getDistance(creature.getWorldPosition()));
 					actor.removeDefender(actor.getFollowObject());
 					//actor.scheduleMovement();
 					//return StateResult.UNFINISHED;
@@ -117,9 +112,19 @@ public class AttackState extends AIState {
 				if(weapon != null)
 					maxDistance = weapon.getMaxRange() - 1;
 			}
+			
+			if (actor.getFollowObject().getPosition().getCell()!=null && creature.getPosition().getCell()!=null){
+				if (actor.getFollowObject().getPosition().getCell().getCellNumber() != creature.getPosition().getCell().getCellNumber())
+					maxDistance=1; // If AI is not in same cell, make sure it gets as close/into the same cell
+			}
+			
+			
+			// Hmmm
 			try{
 				if(actor.getFollowObject().getWorldPosition().getDistance(creature.getWorldPosition()) > maxDistance){
-					actor.setNextPosition(actor.getFollowObject().getPosition());
+					
+					// commented cuz breadcrumb
+					//actor.setNextPosition(actor.getFollowObject().getPosition());
 					// find los pos
 				} else {
 					//recover(actor);
@@ -161,6 +166,7 @@ public class AttackState extends AIState {
 			if(weapon != null)
 				maxDistance = weapon.getMaxRange() - 1;
 		}
+				
 		if(weapon == null)
 			return StateResult.FINISHED;
 		if(actor.getTimeSinceLastAttack() < weapon.getAttackSpeed() * 1000) {
@@ -173,6 +179,13 @@ public class AttackState extends AIState {
 		
 		
 		TangibleObject target = actor.getFollowObject();
+		
+		if (target.getPosition().getCell()!=null && creature.getPosition().getCell()!=null){
+			if (target.getPosition().getCell().getCellNumber() != creature.getPosition().getCell().getCellNumber())
+				maxDistance=1; // If AI is not in same cell, make sure it gets as close/into the same cell
+		}
+		
+		
 		if(target != actor.getHighestDamageDealer() && actor.getHighestDamageDealer() != null) {
 			actor.setFollowObject(actor.getHighestDamageDealer());
 			target = actor.getFollowObject();
@@ -184,15 +197,32 @@ public class AttackState extends AIState {
 		}
 		
 		// If AI has no LOS to target, reposition it
-		if (!core.simulationService.checkLineOfSight(target,creature)){
-			actor.setLastTarget(target);
-			actor.setCurrentState(new RepositionState()); 	
-			return StateResult.FINISHED;
+		boolean LOSCondition = !core.simulationService.checkLineOfSight(target,creature);
+		if (creature.getContainer()!=null)
+			LOSCondition = !core.simulationService.checkLineOfSightInBuilding(target,creature,creature.getGrandparent());
+		
+		if (LOSCondition){
+			if (creature.getPosition().getCell()==null) {
+				actor.setLastTarget(target);
+				actor.setCurrentState(new RepositionState()); 	
+				
+				if (creature.getTemplate().contains("mos_eisley_police") && creature.getPlanet().getName().contains("atooine"))
+					System.out.println("NO LOS! reposition state");
+				
+				return StateResult.FINISHED;
+			} else {
+				// Continue bread crumbing, will eventually get LOS
+				actor.scheduleMovement();
+				return StateResult.UNFINISHED;
+			}
 		}
 		
 		
 		if(!creature.isInCombat() || creature.getDefendersList().size() == 0 || actor.getFollowObject() == null)
 		{
+			
+			if (creature.getTemplate().contains("dantari") && creature.getPlanet().getName().contains("atooine"))
+				System.out.println("Retreat");
 			
 //			System.out.println("creature.isInCombat() " + creature.isInCombat());
 //			System.out.println("creature.getDefendersList().size() " + creature.getDefendersList().size());

@@ -1319,6 +1319,20 @@ public class PlayerService implements INetworkDispatch {
 	}
 	
 	/**
+	 * Creates a blue path to the destination point.
+	 * @param actor Player that will be seeing the blue path.
+	 * @param destination Where the blue path will lead to.
+	 */
+	public void createClientPathBox(SWGObject actor, List<Point3D> coordinates) {
+		
+		if (actor == null || actor.getClient() == null || actor.getClient().getSession() == null)
+			return;
+		
+		CreateClientPathMessage path = new CreateClientPathMessage(coordinates);
+		actor.getClient().getSession().write(path.serialize());
+	}
+	
+	/**
 	 * Gives a player an item and shows the "New Items" message.
 	 * @param reciever Player receiving the item.
 	 * @param item The object to be given.

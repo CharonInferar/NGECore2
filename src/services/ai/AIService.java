@@ -22,6 +22,8 @@
 package services.ai;
 
 import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.Executors;
@@ -45,20 +47,26 @@ import services.ai.states.AIState;
 import services.ai.states.IdleState;
 import services.ai.states.LoiterState;
 import services.ai.states.PatrolState;
+import tools.DevLog;
 import engine.resources.objects.SWGObject;
 import engine.resources.scene.Point3D;
+import engine.resources.scene.Quaternion;
 import engine.resources.service.INetworkDispatch;
 import main.NGECore;
 
 public class AIService {
 	
 	CreatureObject corpse = null;
+	CreatureObject marker = null;
+	int movementCounter = 0;
+	private List<Point3D> pathPaintPointlist = new ArrayList<Point3D>();
 	
 	@SuppressWarnings("unused") private Vector<AIActor> aiActors = new Vector<AIActor>();
 	private NGECore core;
 	private TangibleObject checkerAI = null;
 	
 	public AIService(NGECore core) {
+		DevLog.enableMe();
 		this.core = core;
 	}
 	
@@ -69,8 +77,10 @@ public class AIService {
 		if (pointA==null || pointB==null)
 			return path;		
 		path.add(pointA);
-		float x = pointB.x - 1 + new Random().nextFloat();
-		float z = pointB.z - 1 + new Random().nextFloat();
+//		float x = pointB.x - 1 + new Random().nextFloat();
+//		float z = pointB.z - 1 + new Random().nextFloat();
+		float x = pointB.x;
+		float z = pointB.z;
 		Point3D endPoint = new Point3D(x, core.terrainService.getHeight(planetId, x, z), z);
 		endPoint.setCell(pointB.getCell());
 		if(endPoint.getCell() != null)
@@ -330,13 +340,13 @@ public class AIService {
 		}, 10, 2000, TimeUnit.MILLISECONDS);
 	}
 	
-<<<<<<< HEAD
 	public void startBreadCrumbTrail(CreatureObject target){
 		
 		if (target.isLeavingTrail())
 			return;
 		target.setLeavingTrail(true);
 		target.clearBreadCrumbTrail();
+		target.setBreadCrumbUpdate(0);
 		
 		final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);	
 		final Future<?>[] bct = {null};
@@ -372,35 +382,156 @@ public class AIService {
 	}
 	
 	public Point3D findClosestBreadCrumb(CreatureObject NPC, CreatureObject target){
-		
-		Point3D closestBradCrumb = null;
+
+		Point3D closestBreadCrumb = null;
 		
 		if (!target.isLeavingTrail())
 			return null;
 		
 		float minDist = 9999F;
-		int newIndex = 9999;
-		
+		int newIndex = -1;
+
 		Vector<Point3D> trail = target.getBreadCrumbTrail();
-		for (int i=0;i<trail.size();i++){
+		int trailUpdate = target.getBreadCrumbUpdate();
+
+		int ailastTrailUpdate = ((AIActor) NPC.getAttachment("AI")).getLastTrailUpdate();		
+		int ailastTrailIndex = ((AIActor) NPC.getAttachment("AI")).getLastTrailIndex();
+		
+		int indexShift = 0;
+		
+		if (ailastTrailUpdate==-1){
+			ailastTrailUpdate = 0;
+		} else {
+			indexShift = trailUpdate - ailastTrailUpdate;
+		}
+		//System.out.println("indexShift " + indexShift);
+		indexShift=0; // to make sure for TEST!
+		int startIndex = ailastTrailIndex+indexShift;
+		if (startIndex<0)
+			startIndex=0;
+
+//		System.out.println("ailastTrailUpdate " + ailastTrailUpdate);
+//		System.out.println("ailastTrailIndex " + ailastTrailIndex);
+//		System.out.println("trailUpdate " + trailUpdate);
+//		System.out.println("indexShift " + indexShift);		
+		System.out.println("startIndex " + startIndex + " trail.size() " + trail.size());
+//		System.out.println("trail.size() " + trail.size());
+		
+		for (int i=startIndex;i<trail.size();i++){
+			// Go through all breadcrumbs
 			Point3D point = trail.get(i);
 			Point3D NPCpos = NPC.getWorldPosition();
-			int lastindex = ((AIActor) NPC.getAttachment("AI")).getLastTrailIndex();		
-			if (point.getCell()!=null)
+			int lastindex = ((AIActor) NPC.getAttachment("AI")).getLastTrailIndex();	
+			
+			
+			
+			if (point.getCell()!=null){
 				NPCpos = NPC.getPosition();
-			if (distanceSquared2D(NPCpos,point)<minDist && lastindex<i && distanceSquared2D(NPCpos,point)>1.2){
-				minDist = distanceSquared2D(NPCpos,point);
-				closestBradCrumb = point;
-				newIndex = i;
+				System.out.println("point index " + i + " cell " + point.getCell().getCellNumber() + " dist " + distanceSquared2D(NPCpos,point));
+				// Inside buildings
+				int pointCellNumber = point.getCell().getCellNumber();
+				
+				int npcCellNumber = NPCpos.getCell().getCellNumber();
+				
+//				System.err.println("NPCpos x + " + NPCpos.x +  " z " + NPCpos.z);
+//				System.err.println("distanceSquared2D(NPCpos,point)" + distanceSquared2D(NPCpos,point) + " minDist" + minDist);
+				
+				if (distanceSquared2D(NPCpos,point)<minDist){
+					//if (pointCellNumber==npcCellNumber){
+					//System.out.println("MINDIST<");
+					
+					if (i>startIndex+1){
+						// LOS check
+						boolean los = NGECore.getInstance().simulationService.checkLineOfSightInBuilding(NPC, point, NPC.getGrandparent());					
+						if (los){
+							//System.out.println("index " + i + " SAME CELL LOS " + los);
+							minDist = distanceSquared2D(NPCpos,point);
+							closestBreadCrumb = point;
+							newIndex = i;
+						} else {
+							//System.out.println("index " + i + " SAME CELL ELSE NO LOS " + los);
+							
+							// Experimentally enabled despite no LOS
+							minDist = distanceSquared2D(NPCpos,point);
+							closestBreadCrumb = point;
+							newIndex = i;
+							// Experimentally enabled despite no LOS
+							
+						}
+					} else {
+						//System.out.println("index " + i + " INDEX +1 SAME CELL NO LOS CHECK ");
+						minDist = distanceSquared2D(NPCpos,point);
+						closestBreadCrumb = point;
+						newIndex = i;
+					}
+				} else {
+					//System.out.println("distanceSquared2D(NPCpos,point) " + distanceSquared2D(NPCpos,point));
+				}
+				
+			} else {
+				// Outside buildings
+				if (distanceSquared2D(NPCpos,point)<minDist && lastindex<i && distanceSquared2D(NPCpos,point)>1.2){
+					minDist = distanceSquared2D(NPCpos,point);
+					closestBreadCrumb = point;
+					newIndex = i;
+				}
+			}            
+		}                 
+		
+		//closestBreadCrumb=trail.get(crumbCloseIndex+1); // simple follow the crumbs
+		
+		if (closestBreadCrumb!=null){
+			//if (distanceSquared2D(NPC.getPosition(),closestBreadCrumb)<3.6 && newIndex<trail.size()-2){
+			if (distanceSquared2D(NPC.getPosition(),closestBreadCrumb)<2.0 && newIndex<trail.size()-2){
+				System.out.println("CRUMB REACHED NEWINDEX!!!");
+				newIndex++; // reached that crumb, next index
+				closestBreadCrumb = trail.get(newIndex);
 			}
 		}
-		if (newIndex!=9999)
+		
+		if (closestBreadCrumb!=null)
+			pathPaintPointlist.add(closestBreadCrumb.getWorldPosition());
+		
+		if (newIndex>-1){
+//			if (closestBreadCrumb.getCell()!=null)
+//				System.out.println("POSITION FOUND! index " + newIndex + " mindist " + minDist + " in cell " + closestBreadCrumb.getCell().getCellNumber());
 			((AIActor) NPC.getAttachment("AI")).setLastTrailIndex(newIndex);
-		return closestBradCrumb;
+			((AIActor) NPC.getAttachment("AI")).setLastTrailUpdate(trailUpdate);
+			((CreatureObject)((AIActor) NPC.getAttachment("AI")).getFollowObject()).sendSystemMessage(" INDEX " + newIndex, (byte) 0);
+		} else {
+			System.out.println("NO POSITION FOUND!");
+			//closestBreadCrumb=trail.get(crumbCloseIndex);
+		}
+		
+		
+		
+//		pathPaintPointlist.add(NPC.getWorldPosition());
+		
+		if (NPC.getWorldPosition()!=null && closestBreadCrumb!=null && ((AIActor) NPC.getAttachment("AI"))!=null){
+//			if (((AIActor) NPC.getAttachment("AI")).getFollowObject()!=null && pathPaintPointlist.size()>0)
+//				core.playerService.createClientPathBox(((AIActor) NPC.getAttachment("AI")).getFollowObject(), pathPaintPointlist);
+		}
+		
+		return closestBreadCrumb;
 	}
-
 	
-=======
+	public int getClosestCrumbIndex(Vector<Point3D> trail, CreatureObject creature){
+		int closestIndex = -1;
+		float minDist = 9999;
+		Point3D crePos = creature.getWorldPosition();
+		if (creature.getContainer()!=null)
+			crePos = creature.getPosition();
+		for (int i=0;i<trail.size();i++){
+			Point3D current = trail.get(i);
+			if (distanceSquared2D(current,crePos)<minDist){
+				minDist = distanceSquared2D(current,crePos);
+				closestIndex = i;
+			}				
+		}		
+		return closestIndex;
+	}
+	
+
 	// Test method
 	public void explicitDestroy(CreatureObject actor){
 		System.out.println("SEND DESTROY SENDING for " + corpse.getTemplate());
@@ -408,7 +539,6 @@ public class AIService {
 		System.out.println("SEND DESTROY SENT ");
 	}
 	
->>>>>>> origin/master
 	public void logAI(String logMsg){
 		if (checkDeveloperIdentity()){
 			System.err.println("AI-LOG: " + logMsg);
@@ -428,5 +558,49 @@ public class AIService {
 	public void setCorpse(CreatureObject corpse) {
 		System.out.println("SET CORPSE " + corpse.getTemplate());
 		this.corpse = corpse;
+	}
+	
+	public void monitorPositions(CreatureObject npc){
+		final Future<?>[] fut2 = {null};
+		ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+		fut2[0] = scheduler.scheduleAtFixedRate(new Runnable() {
+			@Override public void run() { 
+				try {
+					
+					System.out.println("Dantari world x " + npc.getWorldPosition().x + " y " + npc.getWorldPosition().y + " z " + npc.getWorldPosition().z);
+					System.out.println("Dantari pos x " + npc.getPosition().x + " y " + npc.getPosition().y + " z " + npc.getPosition().z);
+					if (npc.getPosition().getCell()!=null)
+						System.out.println("Cell " + npc.getPosition().getCell().getCellNumber());
+					System.out.println("");
+					
+					
+				} catch (Exception e) {
+					System.err.println("Exception in monitorPositions " + e.getMessage());
+				}
+			}
+		}, 5, 1, TimeUnit.SECONDS);
+	}
+	
+	public void markCrumb(CreatureObject actor){
+//		String effectFile = "clienteffect/survey_tool_mineral.cef";
+//		protocol.swg.PlayClientEffectLocMessage cEffMsg = new protocol.swg.PlayClientEffectLocMessage(effectFile, actor.getPlanet().getName(), actor.getWorldPosition());
+//		actor.getClient().getSession().write(cEffMsg.serialize());
+//		int cellNum = actor.getPosition().getCell().getCellNumber();
+//		NGECore.getInstance().staticService.spawnObject("mission_mos_eisley_police_sergeant", "tatooine", 1105845 + cellNum, actor.getPosition().x, actor.getPosition().y, actor.getPosition().z, 0.92F, 0F, -0.38F, 0);
+	}
+	
+	public void spawnMarker(){
+		marker = (CreatureObject)NGECore.getInstance().staticService.spawnObject("dark_jedi_master", "tatooine", 0, 3385, 4, -4754, 0, 0, 0, 0, 1);
+		//marker.setPosition(new Point3D(3481, 5, -5007));
+	}
+	
+	public void placeMarker(Point3D pos){
+		
+		marker.setPosition(pos);
+		NGECore.getInstance().simulationService.moveObject(marker, pos, new Quaternion (0,0,1,0), movementCounter, 500.0F, pos.getCell());
+		((AIActor)marker.getAttachment("AI")).setAIactive(false);
+		movementCounter++;
+		//marker.setPosition(pos);
+		//NGECore.getInstance().simulationService.transform(marker, pos);
 	}
 }

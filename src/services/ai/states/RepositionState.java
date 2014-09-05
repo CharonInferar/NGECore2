@@ -20,7 +20,7 @@ public class RepositionState extends AIState{
 		DevLog.debugoutai(actor, "Charon", "AI RepositionState", "onEnter");
 		CreatureObject creature = actor.getCreature();
 		Point3D creaturePosition = creature.getWorldPosition();
-
+		
 		TangibleObject target = actor.getLastTarget();			
 //		Point3D LOSorigin = targetPosition;
 //		float deltaX = LOSorigin.x-creaturePosition.x;

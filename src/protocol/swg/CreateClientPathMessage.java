@@ -53,8 +53,8 @@ public class CreateClientPathMessage extends SWGMessage {
 		buffer.putInt(coordinates.size());
 		for(Point3D point : coordinates) {
 			buffer.putFloat(point.x);
-			buffer.putFloat(point.z);
 			buffer.putFloat(point.y);
+			buffer.putFloat(point.z);
 		}
 		
 		buffer.flip();

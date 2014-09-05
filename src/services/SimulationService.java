@@ -252,8 +252,8 @@ public class SimulationService implements INetworkDispatch {
 					if(obj.getClient() != null)
 						obj.makeAware(object);
 					
-//					if (object.getTemplate().contains("dressed_eisley_officer"))
-//						System.out.println("ME quadtree add!");
+					if (object.getTemplate().contains("dantari_male"))
+						System.out.println("dantari_male quadtree add!");
 				}
 			}
 		}
@@ -516,6 +516,10 @@ public class SimulationService implements INetworkDispatch {
 							if(!object.isInSnapshot())
 								object.sendDestroy(observerClient);
 							object.removeObserver(observerClient.getParent());
+							
+							if (object.getTemplate().contains("dantari_male"))
+								System.out.println("dantari_male quadtree remove!");
+							
 							observerClient.getParent().getAwareObjects().remove(object);						
 					}
 					// Experimental until engine fixed
@@ -879,8 +883,10 @@ public class SimulationService implements INetworkDispatch {
 	
 	public void moveObject(SWGObject object, Point3D newPosition, Quaternion newOrientation, int movementCounter, float speed, CellObject cell) {
 		
-		if(Float.isNaN(newPosition.x) || Float.isNaN(newPosition.y) || Float.isNaN(newPosition.z))
+		if(Float.isNaN(newPosition.x) || Float.isNaN(newPosition.y) || Float.isNaN(newPosition.z)){
+			System.out.println("isNaN position!");
 			return;
+		}
 		
 		if (object instanceof CreatureObject){
 			CreatureObject cre = (CreatureObject) object;
@@ -890,8 +896,15 @@ public class SimulationService implements INetworkDispatch {
 
 		if(cell == null) {
 			
+			if (object.getTemplate().contains("eisley_officer") && object.getPlanet().getName().contains("atooine"))
+				System.out.println("SUDDENLY NO CELL!");
+			
 			Point3D oldPos;
 			synchronized(object.getMutex()) {
+				
+				
+					
+				
 				oldPos = object.getPosition();
 				if(object.getContainer() == null)
 					move(object, oldPos.x, oldPos.z, newPosition.x, newPosition.z);
@@ -944,9 +957,21 @@ public class SimulationService implements INetworkDispatch {
 
 			
 		} else {
-						
+			
+			if (object.getAttachment("OldPosCell")!=null){
+				Point3D opo = (Point3D) object.getAttachment("OldPosCell");
+				if (object.getTemplate().contains("mission_mos_eisley_police"))
+					System.err.println("MOVEOBJECT DISTANCE " + newPosition.getDistance2D(opo) + " newCell " + newPosition.getCell().getCellNumber() +" cell " + cell.getCellNumber() + " speed " + speed);
+			}
+			
+			object.setAttachment("OldPosCell", object.getPosition());
 			newPosition.setCell(cell);
 			Point3D oldPos = object.getPosition();
+			
+			if (Float.isInfinite(object.getPosition().x) || Float.isInfinite(object.getPosition().z))
+				if (object.getTemplate().contains("eisley_officer") && object.getPlanet().getName().contains("atooine"))
+					System.out.println("getpos is infinite!!!!!!!!!!");
+			
 			object.setPosition(newPosition);
 			object.setOrientation(newOrientation);
 			object.setMovementCounter(movementCounter + 1);
@@ -954,19 +979,18 @@ public class SimulationService implements INetworkDispatch {
 			UpdateTransformWithParentMessage utm = new UpdateTransformWithParentMessage(object.getObjectID(), cell.getObjectID(), (short) (newPosition.x * 8 + 0.5), (short) (newPosition.y * 8 + 0.5), (short) (newPosition.z * 8 + 0.5), movementCounter + 1, getSpecialDirection(newOrientation), speed);
 			
 			if(object.getContainer() != cell) {
-//				if (object.getTemplate().contains("shared_dantari_male"))
-//					System.out.println("REMOVED FROM QUADTREE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+				if (object.getTemplate().contains("shared_dantari_male"))
+					System.out.println("REMOVED FROM QUADTREE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
 				remove(object, oldPos.x, oldPos.z);
 				if(object.getContainer() != null)
 					object.getContainer()._remove(object);
 				cell._add(object);
 			}
-			object.notifyObservers(utm, false);
+			if (speed>0.0)
+				object.notifyObservers(utm, false);
 			
 			checkForCollidables(object);
-
-		}
-		
+		}		
 	}
 	
 	public byte getSpecialDirection(Quaternion orientation) {
@@ -1672,6 +1696,72 @@ public class SimulationService implements INetworkDispatch {
 		
 		Point3D position1 = obj1.getPosition();
 		Point3D position2 = obj2.getPosition();
+		
+		Point3D origin = new Point3D(position1.x, position1.y + 1, position1.z);
+		Point3D end = new Point3D(position2.x, position2.y + 1, position2.z);
+		
+		Vector3D direction = new Vector3D(end.x - origin.x, end.y - origin.y, end.z - origin.z);
+		
+		if (direction.getNorm() != 0) {
+			direction.normalize();
+		} else {
+			System.out.println("WARNING: checkLineOfSightInBuilding: Vector norm was 0.");
+		}
+		
+		float distance = position1.getDistance2D(position2);
+		Ray ray = new Ray(origin, direction);
+		
+		for(int i = 1; i < portalVisitor.cells.size(); i++) {
+			
+			Cell cell = portalVisitor.cells.get(i);
+			try {
+				
+				MeshVisitor meshVisitor;
+				if(!cellMeshes.containsKey(cell.mesh)) {
+					meshVisitor = ClientFileManager.loadFile(cell.mesh, MeshVisitor.class);
+					meshVisitor.getTriangles();
+					cellMeshes.put(cell.mesh, meshVisitor);
+				} else {
+					meshVisitor = cellMeshes.get(cell.mesh);
+				}
+				
+				if(meshVisitor == null)
+					continue;
+				
+				List<Mesh3DTriangle> tris = meshVisitor.getTriangles();
+				
+				if(tris.isEmpty())
+					continue;
+
+				for(Mesh3DTriangle tri : tris) {
+					
+					if(ray.intersectsTriangle(tri, distance) != null) {
+					//	System.out.println("Collision with: " + cell.name);
+						return false;
+					}
+					
+				}
+
+
+			} catch (InstantiationException | IllegalAccessException e) {
+				e.printStackTrace();
+			}
+			
+		}
+		
+		return true;
+
+	}
+	
+	public boolean checkLineOfSightInBuilding(SWGObject obj1, Point3D checkpos, SWGObject building) {
+		
+		PortalVisitor portalVisitor = building.getPortalVisitor();
+		
+		if(portalVisitor == null)
+			return true;
+		
+		Point3D position1 = obj1.getPosition();
+		Point3D position2 = checkpos;
 		
 		Point3D origin = new Point3D(position1.x, position1.y + 1, position1.z);
 		Point3D end = new Point3D(position2.x, position2.y + 1, position2.z);

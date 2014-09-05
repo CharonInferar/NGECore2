@@ -272,7 +272,9 @@ public class CharacterService implements INetworkDispatch {
 				if (options != null && options.getInt("DO.ISOLATION.TESTS") > 0){
 					object.setPosition(SpawnPoint.getRandomPosition(new Point3D(0, 0, 0), (float) 0.5, 3, core.terrainService.getPlanetByName("tatooine").getID()));
 				} else {
-					object.setPosition(SpawnPoint.getRandomPosition(new Point3D(3528, 0, -4804), (float) 0.5, 3, core.terrainService.getPlanetByName("tatooine").getID()));
+					//object.setPosition(SpawnPoint.getRandomPosition(new Point3D(3528, 0, -4804), (float) 0.5, 3, core.terrainService.getPlanetByName("tatooine").getID()));
+					object.setPosition(SpawnPoint.getRandomPosition(new Point3D(3334, 0, -4773), (float) 0.5, 3, core.terrainService.getPlanetByName("tatooine").getID()));
+					//object.setPosition(SpawnPoint.getRandomPosition(new Point3D(3276, 7, -4750), (float) 0.5, 3, core.terrainService.getPlanetByName("tatooine").getID()));
 				}
 				
 				object.setCashCredits(100);

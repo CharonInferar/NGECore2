@@ -8,7 +8,7 @@ from java.util import Vector
 from engine.resources.scene import Point3D
 
 def addPlanetSpawns(core, planet):
-
+	return
 	stcSvc = core.staticService
 	objSvc = core.objectService
 	aiSvc = core.aiService

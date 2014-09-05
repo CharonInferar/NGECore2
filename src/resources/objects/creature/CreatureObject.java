@@ -89,6 +89,7 @@ public class CreatureObject extends TangibleObject implements IPersistent {
 	private transient boolean isConstructing = false;
 	private transient Vector<Point3D> breadCrumbTrail = new Vector<Point3D>();
 	private transient boolean leavingTrail = false;
+	private transient int breadCrumbUpdate = 0;
 	
 	public CreatureObject(long objectID, Planet planet, Point3D position, Quaternion orientation, String Template) {
 		super(objectID, planet, position, orientation, Template);
@@ -1463,9 +1464,13 @@ public class CreatureObject extends TangibleObject implements IPersistent {
 	public void addPositionToBreadCrumbTrail(Point3D position){
 		if (breadCrumbTrail.size()<50){
 			breadCrumbTrail.add(position);
+			NGECore.getInstance().aiService.markCrumb(this);
+			
 		} else {
 			breadCrumbTrail.remove(0);
 			breadCrumbTrail.add(position);
+			breadCrumbUpdate++;
+			NGECore.getInstance().aiService.markCrumb(this);
 		}
 	}
 	
@@ -1475,6 +1480,14 @@ public class CreatureObject extends TangibleObject implements IPersistent {
 
 	public void setLeavingTrail(boolean leavingTrail) {
 		this.leavingTrail = leavingTrail;
+	}
+	
+	public int getBreadCrumbUpdate() {
+		return breadCrumbUpdate;
+	}
+
+	public void setBreadCrumbUpdate(int breadCrumbUpdate) {
+		this.breadCrumbUpdate = breadCrumbUpdate;
 	}
 	
 	public void notifyClients(IoBuffer buffer, boolean notifySelf) {
@@ -1659,6 +1672,5 @@ public class CreatureObject extends TangibleObject implements IPersistent {
 			
 			performanceAudience = new ArrayList<CreatureObject>();
 		}
-	}
-	
+	}	
 }
