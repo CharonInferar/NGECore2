@@ -1465,7 +1465,10 @@ public class CreatureObject extends TangibleObject implements IPersistent {
 		if (breadCrumbTrail.size()<50){
 			breadCrumbTrail.add(position);
 			NGECore.getInstance().aiService.markCrumb(this);
-			
+			breadCrumbUpdate++;
+//			System.out.println("Point3D pp = new Point3D("+position.x+", " + position.y + ", " + position.z + ")");
+//			System.out.println("pp.sgetCell " + position.getCell().getCellNumber());
+
 		} else {
 			breadCrumbTrail.remove(0);
 			breadCrumbTrail.add(position);

@@ -377,8 +377,8 @@ public class AIService {
 					e.printStackTrace();
 				}
 			}
-			
-		}, 0, 1000, TimeUnit.MILLISECONDS);
+		//}, 0, 1000, TimeUnit.MILLISECONDS);	
+		}, 0, 500, TimeUnit.MILLISECONDS);
 	}
 	
 	public Point3D findClosestBreadCrumb(CreatureObject NPC, CreatureObject target){
@@ -392,6 +392,16 @@ public class AIService {
 		int newIndex = -1;
 
 		Vector<Point3D> trail = target.getBreadCrumbTrail();
+		
+		// To test against NPCs own patrol points
+//						AIActor act = (AIActor) NPC.getAttachment("AI");
+//						trail = act.getPatrolPoints();
+		
+//		trail = new Vector<Point3D>();
+//		trail.add();
+		
+		
+		
 		int trailUpdate = target.getBreadCrumbUpdate();
 
 		int ailastTrailUpdate = ((AIActor) NPC.getAttachment("AI")).getLastTrailUpdate();		
@@ -405,8 +415,13 @@ public class AIService {
 			indexShift = trailUpdate - ailastTrailUpdate;
 		}
 		//System.out.println("indexShift " + indexShift);
+		
+		//LAST EDIT!
 		indexShift=0; // to make sure for TEST!
-		int startIndex = ailastTrailIndex+indexShift;
+		
+		int startIndex = ailastTrailIndex+indexShift;		
+		
+		
 		if (startIndex<0)
 			startIndex=0;
 
@@ -414,78 +429,113 @@ public class AIService {
 //		System.out.println("ailastTrailIndex " + ailastTrailIndex);
 //		System.out.println("trailUpdate " + trailUpdate);
 //		System.out.println("indexShift " + indexShift);		
-		System.out.println("startIndex " + startIndex + " trail.size() " + trail.size());
+		//System.out.println("startIndex " + startIndex + " trail.size() " + trail.size());
 //		System.out.println("trail.size() " + trail.size());
 		
-		for (int i=startIndex;i<trail.size();i++){
-			// Go through all breadcrumbs
-			Point3D point = trail.get(i);
-			Point3D NPCpos = NPC.getWorldPosition();
-			int lastindex = ((AIActor) NPC.getAttachment("AI")).getLastTrailIndex();	
-			
-			
-			
-			if (point.getCell()!=null){
-				NPCpos = NPC.getPosition();
-				System.out.println("point index " + i + " cell " + point.getCell().getCellNumber() + " dist " + distanceSquared2D(NPCpos,point));
-				// Inside buildings
-				int pointCellNumber = point.getCell().getCellNumber();
-				
-				int npcCellNumber = NPCpos.getCell().getCellNumber();
-				
-//				System.err.println("NPCpos x + " + NPCpos.x +  " z " + NPCpos.z);
-//				System.err.println("distanceSquared2D(NPCpos,point)" + distanceSquared2D(NPCpos,point) + " minDist" + minDist);
-				
-				if (distanceSquared2D(NPCpos,point)<minDist){
-					//if (pointCellNumber==npcCellNumber){
-					//System.out.println("MINDIST<");
-					
-					if (i>startIndex+1){
-						// LOS check
-						boolean los = NGECore.getInstance().simulationService.checkLineOfSightInBuilding(NPC, point, NPC.getGrandparent());					
-						if (los){
-							//System.out.println("index " + i + " SAME CELL LOS " + los);
-							minDist = distanceSquared2D(NPCpos,point);
-							closestBreadCrumb = point;
-							newIndex = i;
-						} else {
-							//System.out.println("index " + i + " SAME CELL ELSE NO LOS " + los);
-							
-							// Experimentally enabled despite no LOS
-							minDist = distanceSquared2D(NPCpos,point);
-							closestBreadCrumb = point;
-							newIndex = i;
-							// Experimentally enabled despite no LOS
-							
-						}
-					} else {
-						//System.out.println("index " + i + " INDEX +1 SAME CELL NO LOS CHECK ");
-						minDist = distanceSquared2D(NPCpos,point);
-						closestBreadCrumb = point;
-						newIndex = i;
-					}
-				} else {
-					//System.out.println("distanceSquared2D(NPCpos,point) " + distanceSquared2D(NPCpos,point));
-				}
-				
-			} else {
-				// Outside buildings
-				if (distanceSquared2D(NPCpos,point)<minDist && lastindex<i && distanceSquared2D(NPCpos,point)>1.2){
-					minDist = distanceSquared2D(NPCpos,point);
-					closestBreadCrumb = point;
-					newIndex = i;
-				}
-			}            
-		}                 
+		//((CreatureObject)((AIActor) NPC.getAttachment("AI")).getFollowObject()).sendSystemMessage(" startIndex " + startIndex, (byte) 0);
+		//System.out.println(" startIndex " + startIndex);
+		
+		Point3D point = trail.get(startIndex);
+		Point3D NPCpos = NPC.getWorldPosition();
+		if (point.getCell()!=null)
+			NPCpos = NPC.getPosition();
+		
+		minDist = distanceSquared2D(NPCpos,point);
+		closestBreadCrumb = point;
+		newIndex = startIndex;
+		//System.out.println("INDEX " + newIndex + " dist " + distanceSquared2D(NPCpos,point));
+		
+		// ToDo: All of that causes problems, not easily solved without more data on the environment
+		// Accessibility of closer points with higher indeces is unknown (walls etc.)
+		
+//		for (int i=startIndex;i<trail.size();i++){
+//			// Go through all breadcrumbs
+//			Point3D point = trail.get(i);
+//			Point3D NPCpos = NPC.getWorldPosition();
+//			int lastindex = ((AIActor) NPC.getAttachment("AI")).getLastTrailIndex();	
+//			
+//			
+//			
+//			if (point.getCell()!=null){
+//				NPCpos = NPC.getPosition();
+//				
+//				System.out.println("INDEX " + i + " DISTLOOOOPPP " + distanceSquared2D(NPCpos,point));
+//				//System.out.println("pointx " + point.x + " pointz " + point.z);
+//				
+//				//System.out.println("point index " + i + " cell " + point.getCell().getCellNumber() + " dist " + distanceSquared2D(NPCpos,point));
+//				// Inside buildings
+//				int pointCellNumber = point.getCell().getCellNumber();
+//				
+//				int npcCellNumber = NPCpos.getCell().getCellNumber();
+//				
+////				System.err.println("NPCpos x + " + NPCpos.x +  " z " + NPCpos.z);
+////				System.err.println("distanceSquared2D(NPCpos,point)" + distanceSquared2D(NPCpos,point) + " minDist" + minDist);
+//				
+//				
+//				
+//				
+//				
+//				
+//				
+//				
+//				
+//				minDist = distanceSquared2D(NPCpos,point);
+//				closestBreadCrumb = point;
+//				newIndex = i;
+//				
+//				
+//				
+//				
+////								if (distanceSquared2D(NPCpos,point)<minDist && distanceSquared2D(NPCpos,point)>2.2){
+////									//if (pointCellNumber==npcCellNumber){
+////									//System.out.println("MINDIST<");
+////									
+////									if (i>startIndex+1){
+////										// LOS check
+////										boolean los = NGECore.getInstance().simulationService.checkLineOfSightInBuilding(NPC, point, NPC.getGrandparent());					
+////										if (los){
+////											//System.out.println("index " + i + " SAME CELL LOS " + los);
+////											minDist = distanceSquared2D(NPCpos,point);
+////											closestBreadCrumb = point;
+////											newIndex = i;
+////										} else {
+////											//System.out.println("index " + i + " SAME CELL ELSE NO LOS " + los);
+////											
+////											// Experimentally enabled despite no LOS
+////													minDist = distanceSquared2D(NPCpos,point);
+////													closestBreadCrumb = point;
+////													newIndex = i;
+////											// Experimentally enabled despite no LOS
+////											
+////										}
+////									} else {
+////										//System.out.println("index " + i + " INDEX +1 SAME CELL NO LOS CHECK ");
+////										minDist = distanceSquared2D(NPCpos,point);
+////										closestBreadCrumb = point;
+////										newIndex = i;
+////									}
+////								} else {
+////									//System.out.println("distanceSquared2D(NPCpos,point) " + distanceSquared2D(NPCpos,point));
+////								}
+//				
+//			} else {
+//				// Outside buildings
+//				if (distanceSquared2D(NPCpos,point)<minDist && lastindex<i && distanceSquared2D(NPCpos,point)>1.2){
+//					minDist = distanceSquared2D(NPCpos,point);
+//					closestBreadCrumb = point;
+//					newIndex = i;
+//				}
+//			}            
+//		}                 
 		
 		//closestBreadCrumb=trail.get(crumbCloseIndex+1); // simple follow the crumbs
 		
 		if (closestBreadCrumb!=null){
 			//if (distanceSquared2D(NPC.getPosition(),closestBreadCrumb)<3.6 && newIndex<trail.size()-2){
-			if (distanceSquared2D(NPC.getPosition(),closestBreadCrumb)<2.0 && newIndex<trail.size()-2){
-				System.out.println("CRUMB REACHED NEWINDEX!!!");
+			if (distanceSquared2D(NPC.getPosition(),closestBreadCrumb)<3.8 && newIndex<trail.size()-2){
+				System.out.println("CRUMB REACHED NEWINDEX!!! " + (newIndex+1));
 				newIndex++; // reached that crumb, next index
-				closestBreadCrumb = trail.get(newIndex);
+				//closestBreadCrumb = trail.get(newIndex);
 			}
 		}
 		

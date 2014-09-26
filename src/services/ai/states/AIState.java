@@ -505,9 +505,9 @@ public abstract class AIState {
 				Point3D crumbPos = NGECore.getInstance().aiService.findClosestBreadCrumb(creature,((CreatureObject)actor.getFollowObject()));
 				if (crumbPos!=null){
 					targetPosition = crumbPos;
-					if (crumbPos.getCell()!=null)
-						if (creature.getTemplate().contains("eisley_officer"))
-							System.out.println("Closed crumb found in distance " + NGECore.getInstance().aiService.distanceSquared2D(creature.getPosition(),targetPosition) + " in cell " + crumbPos.getCell().getCellNumber());
+//					if (crumbPos.getCell()!=null)
+//						if (creature.getTemplate().contains("eisley_officer"))
+//							System.out.println("Closed crumb found in distance " + NGECore.getInstance().aiService.distanceSquared2D(creature.getPosition(),targetPosition) + " in cell " + crumbPos.getCell().getCellNumber());
 				} else {
 					// No crumb found -> bad
 					System.out.println("No crumb found -> bad");
@@ -1031,8 +1031,8 @@ public abstract class AIState {
 		
 		//Quaternion quaternion = directionToQuaternion(creature.getPosition(), newWorldPos);   
 		Quaternion quaternion = directionToQuaternion(creature.getPosition(), newPosition);  
-		if (creature.getTemplate().contains("eisley_officer"))
-			System.out.println("simulationService.moveObject! " + System.currentTimeMillis() + " to x " + newPosition.x + " z " + newPosition.z);
+//		if (creature.getTemplate().contains("eisley_officer"))
+//			System.out.println("simulationService.moveObject! " + System.currentTimeMillis() + " to x " + newPosition.x + " z " + newPosition.z);
 		core.simulationService.moveObject(creature, newPosition, quaternion, creature.getMovementCounter(), speed, newPosition.getCell());	
 	}
 	
