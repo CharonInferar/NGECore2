@@ -204,8 +204,10 @@ public class ObjectService implements INetworkDispatch {
 		
 		while (cursor.hasNext()) {
 			SWGObject object = (SWGObject) cursor.next();
-			if (object != null && !(object instanceof BuildingObject) && !objectList.containsKey(object.getObjectID()))
-				objectList.put(object.getObjectID(), object);
+			if (object != null && !(object instanceof BuildingObject) && !objectList.containsKey(object.getObjectID())){
+				addObject(object);
+				//objectList.put(object.getObjectID(), object);
+			}
 		}
 		
 		cursor.close(); // Has always to be closed properly or will create undefined locking behaviour!
@@ -230,11 +232,13 @@ public class ObjectService implements INetworkDispatch {
 			final SWGObject building = (SWGObject) cursor.next();
 			if(!(building instanceof BuildingObject) || building == null)
 				continue;
-			objectList.put(building.getObjectID(), building);
+			//objectList.put(building.getObjectID(), building);
+			addObject(building);
 			Planet planet = core.terrainService.getPlanetByID(building.getPlanetId());
 			building.setPlanet(planet);
 			building.viewChildren(building, true, true, (object) -> {
-				objectList.put(object.getObjectID(), object);
+				//objectList.put(object.getObjectID(), object);
+				addObject(object);
 				if(object.getParentId() != 0 && object.getContainer() == null)
 					object.setParent(building);
 				object.getContainerInfo(object.getTemplate());
@@ -243,7 +247,8 @@ public class ObjectService implements INetworkDispatch {
 			if(sign != null) {
 				sign.initializeBaselines();
 				sign.initAfterDBLoad();
-				objectList.put(sign.getObjectID(), sign);
+				//objectList.put(sign.getObjectID(), sign);
+				addObject(sign);
 			}
 			if(building.getAttachment("structureOwner") != null && ((BuildingObject) building).getMaintenanceAmount() > 0)
 				core.housingService.startMaintenanceTask((BuildingObject) building);
@@ -507,7 +512,8 @@ public class ObjectService implements INetworkDispatch {
 			loadServerTemplateTasks.add(() -> loadServerTemplate(pointer));
 		}
 		
-		SWGObject ret = objectList.put(objectID, object);
+		//SWGObject ret = objectList.put(objectID, object);
+		addObject(object);
 		
 		//if (ret != null && !ret.getTemplate().equals(object.getTemplate())) {
 //		if (ret == null) {
@@ -569,7 +575,10 @@ public class ObjectService implements INetworkDispatch {
 	}
 	
 	public SWGObject getObject(long objectID) {
-		SWGObject object = objectList.get(objectID);
+		SWGObject object = null;
+		synchronized(objectList) {
+			object = objectList.get(objectID);
+		}
 		
 		if (object == null) {
 			if (objectList.containsKey(objectID)) {
@@ -581,6 +590,14 @@ public class ObjectService implements INetworkDispatch {
 		}
 		
 		return object;
+	}
+	
+	public void addObject(SWGObject object) {
+
+		synchronized(objectList) {
+			objectList.put(object.getObjectID(), object);
+		}
+
 	}
 	
 	public Map<Long, SWGObject> getObjectList() {
@@ -1218,10 +1235,12 @@ public class ObjectService implements INetworkDispatch {
 				
 				session.setAttribute("CmdSceneReady", false);
 				
-				objectList.put(creature.getObjectID(), creature);
+				//objectList.put(creature.getObjectID(), creature);
+				addObject(creature);
 				
 				creature.viewChildren(creature, true, true, (object) -> {
-					objectList.put(object.getObjectID(), object);
+					//objectList.put(object.getObjectID(), object);
+					addObject(object);
 				});
 				
 				creature.viewChildren(creature, true, true, (object) -> {
@@ -1232,8 +1251,10 @@ public class ObjectService implements INetworkDispatch {
 						if(object.getParentId() != 0 && object.getContainer() == null)
 							object.setParent(getObject(object.getParentId()));
 						object.getContainerInfo(object.getTemplate());
-						if(getObject(object.getObjectID()) != null)
-							objectList.put(object.getObjectID(), object);
+						if(getObject(object.getObjectID()) != null){
+							//objectList.put(object.getObjectID(), object);
+							addObject(object);
+						}
 					} else {
 						Thread.currentThread().dumpStack();
 					}
